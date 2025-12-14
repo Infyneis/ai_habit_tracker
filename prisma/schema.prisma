@@ -1,0 +1,187 @@
+// Prisma schema for AI Habit Tracker
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User model
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  avatarUrl     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  habits        Habit[]
+  settings      Settings?
+  affirmations  Affirmation[]
+  notifications Notification[]
+
+  @@index([email])
+}
+
+// Habit model
+model Habit {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  icon          String       @default("sparkles")
+  color         String       @default("#a855f7")
+  categoryId    String?
+  category      Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags          HabitTag[]
+  frequency     Frequency    @default(DAILY)
+  targetCount   Int          @default(1)
+  targetPeriod  Period       @default(DAY)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  archived      Boolean      @default(false)
+  completions   Completion[]
+  reminders     Reminder[]
+
+  @@index([userId])
+  @@index([categoryId])
+}
+
+// Completion tracking
+model Completion {
+  id            String       @id @default(cuid())
+  habitId       String
+  habit         Habit        @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  completedAt   DateTime     @default(now())
+  note          String?
+
+  @@index([habitId])
+  @@index([completedAt])
+}
+
+// Category for organizing habits
+model Category {
+  id            String       @id @default(cuid())
+  userId        String
+  name          String
+  icon          String       @default("folder")
+  color         String       @default("#a855f7")
+  habits        Habit[]
+  createdAt     DateTime     @default(now())
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+// Tags for habits (many-to-many)
+model Tag {
+  id            String       @id @default(cuid())
+  userId        String
+  name          String
+  habits        HabitTag[]
+  createdAt     DateTime     @default(now())
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+// Junction table for Habit-Tag many-to-many
+model HabitTag {
+  habitId       String
+  habit         Habit        @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  tagId         String
+  tag           Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  assignedAt    DateTime     @default(now())
+
+  @@id([habitId, tagId])
+}
+
+// Reminders for habits
+model Reminder {
+  id            String       @id @default(cuid())
+  habitId       String
+  habit         Habit        @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  type          ReminderType
+  time          String       // HH:mm format
+  days          Int[]        // 0-6 for days of week (0 = Sunday)
+  enabled       Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([habitId])
+}
+
+// User settings
+model Settings {
+  id              String       @id @default(cuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme           Theme        @default(SYSTEM)
+  emailReminders  Boolean      @default(true)
+  pushReminders   Boolean      @default(true)
+  weekStartsOn    Int          @default(1) // 0 = Sunday, 1 = Monday
+  updatedAt       DateTime     @updatedAt
+}
+
+// AI-generated affirmations
+model Affirmation {
+  id            String       @id @default(cuid())
+  userId        String?
+  user          User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content       String
+  generatedAt   DateTime     @default(now())
+
+  @@index([userId])
+  @@index([generatedAt])
+}
+
+// In-app notifications
+model Notification {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  message       String
+  type          NotificationType
+  read          Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+
+  @@index([userId])
+  @@index([read])
+}
+
+// Enums
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+enum Period {
+  DAY
+  WEEK
+  MONTH
+}
+
+enum ReminderType {
+  IN_APP
+  PUSH
+  EMAIL
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum NotificationType {
+  REMINDER
+  STREAK
+  ACHIEVEMENT
+  AI_TIP
+}
