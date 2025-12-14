@@ -17,6 +17,7 @@ import { ProgressRing } from "@/components/dashboard/progress-ring";
 import { HabitCard } from "@/components/habits/habit-card";
 import { CreateHabitDialog } from "@/components/habits/create-habit-dialog";
 import { Confetti } from "@/components/animations/confetti";
+import { HABIT_CATEGORIES } from "@/lib/ollama";
 import type { HabitWithRelations, StreakInfo } from "@/types";
 
 // Sample data - will be replaced with real data from database
@@ -154,7 +155,13 @@ export default function DashboardPage() {
     frequency: string;
     targetCount: number;
     targetPeriod: string;
+    categoryId?: string;
   }) => {
+    // Find category details if categoryId is provided
+    const categoryData = data.categoryId
+      ? HABIT_CATEGORIES.find((c) => c.id === data.categoryId)
+      : null;
+
     const newHabit: HabitWithRelations = {
       id: crypto.randomUUID(),
       userId: "demo",
@@ -162,14 +169,21 @@ export default function DashboardPage() {
       description: data.description || null,
       icon: data.icon,
       color: data.color,
-      categoryId: null,
+      categoryId: data.categoryId || null,
       frequency: data.frequency as "DAILY" | "WEEKLY" | "MONTHLY" | "CUSTOM",
       targetCount: data.targetCount,
       targetPeriod: data.targetPeriod as "DAY" | "WEEK" | "MONTH",
       createdAt: new Date(),
       updatedAt: new Date(),
       archived: false,
-      category: null,
+      category: categoryData
+        ? {
+            id: categoryData.id,
+            name: categoryData.name,
+            icon: categoryData.icon,
+            color: categoryData.color,
+          }
+        : null,
     };
 
     setHabits((prev) => [newHabit, ...prev]);

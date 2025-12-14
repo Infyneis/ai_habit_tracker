@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus, Sparkles, Wand2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { HABIT_CATEGORIES } from "@/lib/ollama";
+import { cn } from "@/lib/utils";
 
 const habitIcons = [
   { value: "sparkles", label: "Sparkles", emoji: "✨" },
@@ -66,6 +68,7 @@ interface CreateHabitDialogProps {
     frequency: string;
     targetCount: number;
     targetPeriod: string;
+    categoryId?: string;
   }) => void;
 }
 
@@ -78,6 +81,9 @@ export function CreateHabitDialog({ onSubmit }: CreateHabitDialogProps) {
   const [frequency, setFrequency] = useState("DAILY");
   const [targetCount, setTargetCount] = useState(1);
   const [targetPeriod, setTargetPeriod] = useState("DAY");
+  const [categoryId, setCategoryId] = useState<string>("");
+  const [isSuggestingCategory, setIsSuggestingCategory] = useState(false);
+  const [aiSuggestedCategory, setAiSuggestedCategory] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,9 +97,15 @@ export function CreateHabitDialog({ onSubmit }: CreateHabitDialogProps) {
       frequency,
       targetCount,
       targetPeriod,
+      categoryId: categoryId || undefined,
     });
 
     // Reset form
+    resetForm();
+    setOpen(false);
+  };
+
+  const resetForm = () => {
     setName("");
     setDescription("");
     setIcon("sparkles");
@@ -101,20 +113,62 @@ export function CreateHabitDialog({ onSubmit }: CreateHabitDialogProps) {
     setFrequency("DAILY");
     setTargetCount(1);
     setTargetPeriod("DAY");
-    setOpen(false);
+    setCategoryId("");
+    setAiSuggestedCategory(null);
   };
 
+  const suggestCategoryWithAI = useCallback(async () => {
+    if (!name.trim()) return;
+
+    setIsSuggestingCategory(true);
+    setAiSuggestedCategory(null);
+
+    try {
+      const response = await fetch("/api/ai/suggest-category", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitName: name,
+          habitDescription: description,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.data?.categoryId) {
+        setCategoryId(result.data.categoryId);
+        setAiSuggestedCategory(result.data.categoryId);
+
+        // Also update color to match category
+        const category = HABIT_CATEGORIES.find(
+          (c) => c.id === result.data.categoryId
+        );
+        if (category) {
+          setColor(category.color);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to get category suggestion:", error);
+    } finally {
+      setIsSuggestingCategory(false);
+    }
+  }, [name, description]);
+
   const selectedIcon = habitIcons.find((i) => i.value === icon);
+  const selectedCategory = HABIT_CATEGORIES.find((c) => c.id === categoryId);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (!isOpen) resetForm();
+    }}>
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="h-4 w-4" />
           New Habit
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -148,6 +202,79 @@ export function CreateHabitDialog({ onSubmit }: CreateHabitDialogProps) {
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
             />
+          </div>
+
+          {/* Category with AI Suggestion */}
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <div className="flex items-center gap-2">
+              <Select value={categoryId} onValueChange={(value) => {
+                setCategoryId(value);
+                setAiSuggestedCategory(null);
+                // Update color to match category
+                const category = HABIT_CATEGORIES.find((c) => c.id === value);
+                if (category) {
+                  setColor(category.color);
+                }
+              }}>
+                <SelectTrigger className={cn(
+                  "flex-1",
+                  aiSuggestedCategory && categoryId === aiSuggestedCategory && "ring-2 ring-primary/50"
+                )}>
+                <SelectValue placeholder="Select a category">
+                  {selectedCategory && (
+                    <span className="flex items-center gap-2">
+                      <span>{selectedCategory.icon}</span>
+                      <span>{selectedCategory.name}</span>
+                      {aiSuggestedCategory === categoryId && (
+                        <span className="text-xs text-primary ml-1">(AI)</span>
+                      )}
+                    </span>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                  {HABIT_CATEGORIES.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <span className="flex items-center gap-2">
+                        <span>{category.icon}</span>
+                        <span>{category.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="shrink-0 h-10 w-10"
+                onClick={suggestCategoryWithAI}
+                disabled={!name.trim() || isSuggestingCategory}
+                title="AI Suggest Category"
+              >
+                {isSuggestingCategory ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            <AnimatePresence>
+              {aiSuggestedCategory && categoryId === aiSuggestedCategory && (
+                <motion.p
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="text-xs text-primary flex items-center gap-1"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  AI suggested this category based on your habit
+                </motion.p>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Icon and Color */}
