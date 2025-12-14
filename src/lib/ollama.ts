@@ -98,3 +98,51 @@ export async function checkOllamaHealth(): Promise<boolean> {
     return false;
   }
 }
+
+// Predefined categories for habits
+export const HABIT_CATEGORIES = [
+  { id: "health", name: "Health", icon: "💪", color: "#22c55e" },
+  { id: "wellness", name: "Wellness", icon: "🧘", color: "#a855f7" },
+  { id: "productivity", name: "Productivity", icon: "⚡", color: "#f97316" },
+  { id: "learning", name: "Learning", icon: "📚", color: "#3b82f6" },
+  { id: "fitness", name: "Fitness", icon: "🏃", color: "#ef4444" },
+  { id: "mindfulness", name: "Mindfulness", icon: "🧠", color: "#8b5cf6" },
+  { id: "nutrition", name: "Nutrition", icon: "🥗", color: "#10b981" },
+  { id: "sleep", name: "Sleep", icon: "🌙", color: "#6366f1" },
+  { id: "social", name: "Social", icon: "👥", color: "#ec4899" },
+  { id: "creativity", name: "Creativity", icon: "🎨", color: "#f59e0b" },
+  { id: "finance", name: "Finance", icon: "💰", color: "#14b8a6" },
+  { id: "other", name: "Other", icon: "✨", color: "#64748b" },
+] as const;
+
+export type HabitCategory = (typeof HABIT_CATEGORIES)[number];
+
+export async function suggestCategory(
+  habitName: string,
+  habitDescription?: string
+): Promise<string> {
+  const categoryNames = HABIT_CATEGORIES.map((c) => c.id).join(", ");
+  const context = habitDescription
+    ? `${habitName}: ${habitDescription}`
+    : habitName;
+
+  const prompt = `Given this habit: "${context}"
+
+Choose the single most appropriate category from this list: ${categoryNames}
+
+Only respond with the category id (one word), nothing else.`;
+
+  try {
+    const response = await generateCompletion(prompt, {
+      temperature: 0.3,
+      maxTokens: 20,
+    });
+
+    const suggested = response.trim().toLowerCase();
+    const validCategory = HABIT_CATEGORIES.find((c) => c.id === suggested);
+
+    return validCategory ? validCategory.id : "other";
+  } catch {
+    return "other";
+  }
+}
