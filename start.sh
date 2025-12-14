@@ -44,8 +44,33 @@ if command -v ollama &> /dev/null; then
         echo "   ✅ Llama 3.2 model downloaded"
     fi
 else
-    echo "   ⚠️  Ollama not found. Install it with: brew install ollama"
-    echo "   💡 AI features will use fallback affirmations"
+    echo "   ⚠️  Ollama not found"
+    echo ""
+
+    # Check if we're on macOS and have brew
+    if [[ "$OSTYPE" == "darwin"* ]] && command -v brew &> /dev/null; then
+        read -p "   Would you like to install Ollama via Homebrew? (y/n) " -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "   📥 Installing Ollama..."
+            brew install ollama
+            echo "   ✅ Ollama installed"
+            echo ""
+            echo "   🔄 Starting Ollama server..."
+            ollama serve &> /dev/null &
+            sleep 2
+            echo "   ✅ Ollama server started"
+            echo ""
+            echo "   📥 Pulling Llama 3.2 model (this may take a few minutes)..."
+            ollama pull llama3.2
+            echo "   ✅ Llama 3.2 model downloaded"
+        else
+            echo "   💡 Skipping Ollama - AI features will use fallback responses"
+        fi
+    else
+        echo "   💡 Install Ollama manually from: https://ollama.ai"
+        echo "   💡 AI features will use fallback responses for now"
+    fi
 fi
 echo ""
 
