@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: habit_tracker_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: habit_user
+      POSTGRES_PASSWORD: habit_password
+      POSTGRES_DB: habit_tracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U habit_user -d habit_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 📧 Optional: Email testing in development
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: habit_tracker_mail
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
