@@ -1,6 +1,10 @@
 # ✨ HabitFlow - AI Habit Tracker `#2/365 - 1 Year Challenge`
 
-> *Building something new every day for a year. Day 2: An AI-powered habit tracker with beautiful animations and a lavender theme.*
+<p align="center">
+  <img src="https://img.shields.io/badge/🚀_Year_Coding_Challenge-Project_%232-ff6b6b?style=for-the-badge" alt="Year Coding Challenge" />
+</p>
+
+> *An AI-powered habit tracker with beautiful animations and a lavender theme.*
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
