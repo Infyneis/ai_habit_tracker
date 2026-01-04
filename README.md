@@ -1,8 +1,4 @@
-# ✨ HabitFlow - AI Habit Tracker `#2/365 - 1 Year Challenge`
-
-<p align="center">
-  <img src="https://img.shields.io/badge/🚀_Year_Coding_Challenge-Project_%232-ff6b6b?style=for-the-badge" alt="Year Coding Challenge" />
-</p>
+# ✨ HabitFlow - AI Habit Tracker
 
 > *An AI-powered habit tracker with beautiful animations and a lavender theme.*
 
@@ -81,7 +77,5 @@ Open [http://localhost:3000](http://localhost:3000) and start building habits! �
 <div align="center">
 
 Made with 💜 for habit builders everywhere
-
-**Day 2 of 365** | [Year Coding Challenge](https://github.com/Infyneis)
 
 </div>

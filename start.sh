@@ -8,7 +8,6 @@ set -e
 echo ""
 echo "✨ =================================="
 echo "   HabitFlow - AI Habit Tracker"
-echo "   #2/365 Year Coding Challenge"
 echo "================================== ✨"
 echo ""
 
